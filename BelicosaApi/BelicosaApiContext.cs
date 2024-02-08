@@ -12,21 +12,19 @@ namespace BelicosaApi
         public DbSet<Player> Players { get; set; }
         public DbSet<Territory> Territories { get; set; }
 
-        //protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //    modelBuilder.Entity<Player>()
-        //        .HasOne(p => p.User)
-        //        .WithOne()
-        //        .IsRequired();
-        //}
 
-        public BelicosaApiContext(DbContextOptions<BelicosaApiContext> options) : base(options) { }
+        private readonly IConfiguration _config;
+
+        public BelicosaApiContext(DbContextOptions<BelicosaApiContext> options, IConfiguration config) : base(options)
+        {
+            _config = config;
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseNpgsql("");
+                optionsBuilder.UseNpgsql(_config.GetSection("ConnectionString").Value);
             }
         }
     }

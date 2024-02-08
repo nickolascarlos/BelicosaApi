@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using BelicosaApi.DTOs;
 using BelicosaApi.DTOs.Game;
+using BelicosaApi.DTOs.Player;
 using BelicosaApi.Models;
+using BelicosaApi.ModelsServices;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,22 +22,25 @@ namespace BelicosaApi.Controllers
     [ApiController]
     public class BelicosaController : ControllerBase
     {
-        private readonly BelicosaApiContext _belicosaContext;
+        // private readonly BelicosaApiContext _belicosaContext;
         private readonly IMapper _mapper;
         private readonly IAuthorizationService _authorizationService;
         private readonly Microsoft.AspNetCore.Identity.UserManager<IdentityUser> _userManager;
+        private readonly BelicosaGameService _gameService;
 
         public BelicosaController(
             BelicosaApiContext context,
             IMapper mapper,
             IAuthorizationService authorizationService,
-            Microsoft.AspNetCore.Identity.UserManager<IdentityUser> userManager
+            Microsoft.AspNetCore.Identity.UserManager<IdentityUser> userManager,
+            BelicosaGameService belicosaGameService
            )
         {
-            _belicosaContext = context;
+            //_belicosaContext = context;
             _mapper = mapper;
             _authorizationService = authorizationService;
             _userManager = userManager;
+            _gameService = belicosaGameService;
         }
 
         [HttpPost]
@@ -48,110 +53,80 @@ namespace BelicosaApi.Controllers
                 return Problem("Owner is not a valid user", statusCode: StatusCodes.Status404NotFound);
             }
 
-            BelicosaGame belicosaGame = new BelicosaGame
-            {
-                 Title = game.Title,
-                 Owner = owner
-            };
+            BelicosaGame createdGame = await _gameService.Create(game, owner);
 
-            var chosenColor = belicosaGame.GetRandomAvailableColor();
+            var returnableBelicosaGame = _mapper.Map<RetrieveGameDTO>(createdGame);
 
-            Player ownerAsPlayer = new Player
-            {
-                Game = belicosaGame,
-                User = owner,
-                ArmyColor = chosenColor
-            };
-
-            _belicosaContext.Add(belicosaGame);
-            _belicosaContext.Add(ownerAsPlayer);
-            _belicosaContext.SaveChanges();
-
-            var returnBelicosaGame = _mapper.Map<RetrieveGameDTO>(belicosaGame);
-
-            return CreatedAtAction(nameof(GetBelicosaGame), new { id = belicosaGame.Id }, returnBelicosaGame);
+            return CreatedAtAction(nameof(GetBelicosaGame), new { id = createdGame.Id }, returnableBelicosaGame);
         }
 
         [AllowAnonymous]
         [HttpGet("{id}")]
-        public ActionResult GetBelicosaGame(int id)
+        public async Task<ActionResult> GetBelicosaGame(int id)
         {
-
-            BelicosaGame? belicosaGame = _belicosaContext.Games
-                                            .Include(game => game.Owner)
-                                            .Include(game => game.Players)
-                                            .FirstOrDefault(game => game.Id == id);
+            BelicosaGame? belicosaGame = await _gameService.Get(id);
             
             if (belicosaGame is null)
             {
                 return NotFound();
             }
 
-            return Ok(_mapper.Map<RetrieveGameDTO>(belicosaGame));
+            var returnableBelicosaGame = _mapper.Map<RetrieveGameDTO>(belicosaGame);
+
+            return Ok(returnableBelicosaGame);
         }
 
         [HttpPost("{id}/start")]
-        public ActionResult StartBelicosaGame(int id)
+        public async Task<ActionResult> StartBelicosaGame(int id)
         {
-            BelicosaGame? belicosaGame = _belicosaContext.Games.Find(id);
+            BelicosaGame? belicosaGame = await _gameService.Get(id);
 
             if (belicosaGame is null)
             {
                 return NotFound();
             }
 
-            belicosaGame.StartTime = DateTime.Now.ToUniversalTime();
-            belicosaGame.Status = GameStatus.Started;
-            _belicosaContext.SaveChanges();
+            var result = await _authorizationService.AuthorizeAsync(User, belicosaGame, "UserIsGameOwner");
+
+            if (!result.Succeeded)
+            {
+                return Problem("Only the owner may start the game", statusCode: StatusCodes.Status403Forbidden);
+            }
+
+            await _gameService.Start(belicosaGame);
 
             return Ok();
         }
 
-        [HttpPost("{id}/addPlayer/{userId}")]
-        public ActionResult AddPlayerToBelicosaGame(int id, int userId)
+        [HttpPost("{gameId}/addPlayer/{userId}")]
+        public async Task<ActionResult> AddPlayerToBelicosaGame(int gameId, string userId)
         {
-            BelicosaGame? belicosaGame = _belicosaContext.Games.Find(id);
+            BelicosaGame? game = await _gameService.Get(gameId);
             
-            if (belicosaGame is null) 
+            if (game is null) 
             {
                 return Problem("Game not found", statusCode: StatusCodes.Status404NotFound);
             }
 
-            IdentityUser? user = _belicosaContext.Users.Find(userId);
+            IdentityUser? user = await _userManager.FindByIdAsync(userId);
 
             if (user is null)
             {
                 return Problem("User not found", statusCode: StatusCodes.Status404NotFound);
             }
 
-            if (belicosaGame.AvailableColors.Count == 0)
+            // TODO: Should it be here?
+            if (game.AvailableColors.Count == 0)
             {
                 return Problem("Maximum player capacity reached", statusCode: StatusCodes.Status403Forbidden);
             }
 
-            var newPlayerColor = belicosaGame.GetRandomAvailableColor();
-            
-            Player player = new Player()
-            {
-                User = user,
-                Game = belicosaGame,
-                ArmyColor = newPlayerColor
-            };
+            Player addedPlayer = await _gameService.AddPlayer(game, user);
 
+            var returnableAddedPlayer = _mapper.Map<GetPlayerDTO>(addedPlayer); 
 
-            _belicosaContext.Add(player);
-            belicosaGame.Players.Add(player);
-
-            try
-            {
-                _belicosaContext.SaveChanges();
-            }
-            catch (DbUpdateException)
-            {
-                throw;
-            }
-
-            return Created($"api/player/{player.Id}", player);
+            // TODO: Replace hard-coded route
+            return Created($"api/player/{addedPlayer.Id}", returnableAddedPlayer);
         }
     }
 }

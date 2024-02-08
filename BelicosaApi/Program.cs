@@ -1,8 +1,11 @@
 using AutoMapper;
 using BelicosaApi;
+using BelicosaApi.AuthorizationHandlers;
 using BelicosaApi.AutoMapper;
 using BelicosaApi.DTOs;
 using BelicosaApi.Models;
+using BelicosaApi.ModelsServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +19,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<BelicosaApiContext>();
 builder.Services.AddAutoMapper(typeof(MapperConfig));
 builder.Services.AddAuthentication();
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("UserIsGameOwner", policy =>
+    {
+        policy.Requirements.Add(new UserIsGameOwnerRequirement());
+    });
+});
+builder.Services.AddScoped<BelicosaGameService>();
+builder.Services.AddSingleton<IAuthorizationHandler, UserIsGameOwnerAuthorizationHandler>();
 builder.Services.AddIdentityApiEndpoints<IdentityUser>()
                 .AddEntityFrameworkStores<BelicosaApiContext>();
 

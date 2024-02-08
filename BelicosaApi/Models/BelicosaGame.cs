@@ -12,7 +12,7 @@ namespace BelicosaApi.Models
         public string OwnerId { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public IdentityUser? Owner { get; set; } = null!;
+        public IdentityUser Owner { get; set; } = null!;
 
         public DateTime? StartTime { get; set; }
         public DateTime? FinishTime { get; set; }
