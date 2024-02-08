@@ -3,6 +3,7 @@ using System;
 using BelicosaApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BelicosaApi.Migrations
 {
     [DbContext(typeof(BelicosaApiContext))]
-    partial class BelicosaApiContextModelSnapshot : ModelSnapshot
+    [Migration("20240207163238_AddAuthentication")]
+    partial class AddAuthentication
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,9 +43,8 @@ namespace BelicosaApi.Migrations
                     b.Property<DateTime?>("FinishTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("StartTime")
                         .HasColumnType("timestamp with time zone");
@@ -100,9 +102,8 @@ namespace BelicosaApi.Migrations
                     b.Property<int>("GameId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -182,6 +183,27 @@ namespace BelicosaApi.Migrations
                     b.HasIndex("TerritoryId");
 
                     b.ToTable("TerritoryCard");
+                });
+
+            modelBuilder.Entity("BelicosaApi.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -382,7 +404,7 @@ namespace BelicosaApi.Migrations
 
             modelBuilder.Entity("BelicosaApi.Models.BelicosaGame", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "Owner")
+                    b.HasOne("BelicosaApi.Models.User", "Owner")
                         .WithMany()
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -410,7 +432,7 @@ namespace BelicosaApi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
+                    b.HasOne("BelicosaApi.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

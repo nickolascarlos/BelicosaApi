@@ -1,4 +1,6 @@
-﻿namespace BelicosaApi.Models
+﻿using System.Text.Json.Serialization;
+
+namespace BelicosaApi.Models
 {
     public class TerritoryCard
     {
@@ -9,6 +11,7 @@
         public Player? Holder { get; set; }
     }
 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum Shape
     {
         Triangle,
