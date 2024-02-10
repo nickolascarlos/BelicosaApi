@@ -9,11 +9,12 @@ namespace BelicosaApi
 {
     public class BelicosaApiContext : IdentityDbContext<IdentityUser>
     {
-        public DbSet<BelicosaGame> Games { get; set; }
+        public DbSet<BelicosaGame> Game { get; set; }
         // public DbSet<User> Users { get; set; }
-        public DbSet<Player> Players { get; set; }
-        public DbSet<Territory> Territories { get; set; }
-        public DbSet<Continent> Continents { get; set; }
+        public DbSet<Player> Player { get; set; }
+        public DbSet<Territory> Territory { get; set; }
+        public DbSet<Continent> Continent { get; set; }
+        public DbSet<TerritoryCard> TerritoryCard { get; set; }
 
 
         private readonly IConfiguration _config;

@@ -4,6 +4,7 @@ using BelicosaApi.DTOs;
 using BelicosaApi.DTOs.Game;
 using BelicosaApi.DTOs.Player;
 using BelicosaApi.DTOs.Territory;
+using BelicosaApi.DTOs.TerritoryCard;
 using BelicosaApi.Enums;
 using BelicosaApi.Exceptions;
 using BelicosaApi.Models;
@@ -32,6 +33,8 @@ namespace BelicosaApi.Controllers
         private readonly Microsoft.AspNetCore.Identity.UserManager<IdentityUser> _userManager;
         private readonly BelicosaGameService _gameService;
         private readonly TerritoryService _territoryService;
+        private readonly TerritoryCardService _territoryCardService;
+
 
         public BelicosaController(
             BelicosaApiContext context,
@@ -39,8 +42,8 @@ namespace BelicosaApi.Controllers
             IAuthorizationService authorizationService,
             Microsoft.AspNetCore.Identity.UserManager<IdentityUser> userManager,
             BelicosaGameService belicosaGameService,
-            TerritoryService territoryService
-
+            TerritoryService territoryService,
+            TerritoryCardService territoryCardService
            )
         {
             //_belicosaContext = context;
@@ -49,6 +52,7 @@ namespace BelicosaApi.Controllers
             _userManager = userManager;
             _gameService = belicosaGameService;
             _territoryService = territoryService;
+            _territoryCardService = territoryCardService;
         }
 
         [HttpPost]
@@ -153,6 +157,23 @@ namespace BelicosaApi.Controllers
             List<RetrieveTerritoryDTO> returnableTerritories = territories.Select(territory => _mapper.Map<RetrieveTerritoryDTO>(territory)).ToList();
 
             return Ok(returnableTerritories);
+        }
+
+        [HttpGet("{gameId}/territoryCards")]
+        public async Task<ActionResult> GetTerritoryCards(int gameId)
+        {
+            BelicosaGame? game = await _gameService.Get(gameId);
+            
+            if ( game is null)
+            {
+                return Problem("Game not found", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            List<TerritoryCard> cards = await _territoryCardService.GetAll(game);
+
+            List<RetrieveTerritoryCardDTO> returnableCards = cards.Select(card => _mapper.Map<RetrieveTerritoryCardDTO>(card)).ToList();
+
+            return Ok(returnableCards);
         }
     }
 }

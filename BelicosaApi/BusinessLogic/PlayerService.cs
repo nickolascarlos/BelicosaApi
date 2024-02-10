@@ -9,7 +9,7 @@ namespace BelicosaApi.BusinessLogic
 
         public async Task<Player?> Get(int playerId)
         {
-            return await _context.Players.FindAsync(playerId);
+            return await _context.Player.FindAsync(playerId);
         }
     }
 }

@@ -33,7 +33,7 @@ namespace BelicosaApi.ModelsServices
 
         public async Task<BelicosaGame?> Get(int id)
         {
-            return await _context.Games.Include(game => game.Owner)
+            return await _context.Game.Include(game => game.Owner)
                                        .Include(game => game.Players)
                                        .FirstOrDefaultAsync(game => game.Id == id);
         }
@@ -91,7 +91,7 @@ namespace BelicosaApi.ModelsServices
         {
             game.Status = GameStatus.Started;
             game.StartTime = DateTime.Now.ToUniversalTime();
-            _context.Games.Update(game);
+            _context.Game.Update(game);
             await _context.SaveChangesAsync();
 
             await Initialize(game);
@@ -109,6 +109,8 @@ namespace BelicosaApi.ModelsServices
             Territory germany = await _territoryService.Create("Alemanha", europe, game);
             Territory england = await _territoryService.Create("Inglaterra", europe, game);
 
+            List<Territory> territories = new List<Territory>() { argelia, nigeria, france, germany, england };
+
             argelia.AddBorder(nigeria);
             germany.AddBorder(france);
             nigeria.AddBorder(argelia);
@@ -118,7 +120,31 @@ namespace BelicosaApi.ModelsServices
             france.AddBorder(germany);
             england.AddBorder(france);
 
+
             _context.UpdateRange([argelia, nigeria, france, germany, england]);
+
+            await _context.SaveChangesAsync();
+
+            await DistributeTerritoryCards(game, territories);
+        }
+
+        private async Task DistributeTerritoryCards(BelicosaGame game, List<Territory> territories)
+        {
+            List<Shape> shapes = typeof(Shape).GetEnumValues().Cast<Shape>().ToList();
+            List<Player> players = game.Players;
+
+            foreach (Territory territory in territories)
+            {
+                TerritoryCard territoryCard = new TerritoryCard
+                {
+                    Game = game,
+                    Territory = territory,
+                    Shape = shapes[new Random().Next(0, shapes.Count())],
+                    Holder = players[new Random().Next(0, players.Count())]
+                };
+
+                _context.Add(territoryCard);
+            }
 
             await _context.SaveChangesAsync();
         }

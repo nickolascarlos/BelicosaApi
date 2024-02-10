@@ -37,8 +37,7 @@ builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<TerritoryService>();
 builder.Services.AddScoped<ContinentService>();
 //builder.Services.AddScoped<PlayerService>();
-
-
+builder.Services.AddScoped<TerritoryCardService>();
 
 builder.Services.AddSingleton<IAuthorizationHandler, UserIsGameOwnerAuthorizationHandler>();
 builder.Services.AddIdentityApiEndpoints<IdentityUser>()

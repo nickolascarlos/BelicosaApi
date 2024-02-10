@@ -14,7 +14,7 @@ namespace BelicosaApi.BusinessLogic
 
         public async Task<Territory?> Get(int territoryId)
         {
-            Territory? territory = await _context.Territories
+            Territory? territory = await _context.Territory
                 .Include(t => t.CanAttack)
                 .Include(t => t.MayBeAttackedBy)
                 .SingleOrDefaultAsync(territory => territory.Id == territoryId);
@@ -32,7 +32,7 @@ namespace BelicosaApi.BusinessLogic
 
         public async Task<List<Territory>> GetAll(BelicosaGame game)
         {
-            return await _context.Territories
+            return await _context.Territory
                 .Include(t => t.CanAttack)
                 .Include(t => t.MayBeAttackedBy)
                 .Where(t => t.Game.Id == game.Id).ToListAsync();

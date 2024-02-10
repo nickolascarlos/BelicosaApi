@@ -9,11 +9,11 @@ namespace BelicosaApi.BusinessLogic
 
         public async Task<Continent?> Get(int continentId)
         {
-            return await _context.Continents.SingleOrDefaultAsync(x => x.Id == continentId);
+            return await _context.Continent.SingleOrDefaultAsync(x => x.Id == continentId);
         }
         public async Task<List<Continent>> GetAll(BelicosaGame game)
         {
-            return await _context.Continents.Where(c => c.Game.Id == game.Id).ToListAsync();
+            return await _context.Continent.Where(c => c.Game.Id == game.Id).ToListAsync();
         }
         
         public async Task<Continent> Create(string name, BelicosaGame game)

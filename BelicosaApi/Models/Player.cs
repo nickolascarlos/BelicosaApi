@@ -13,6 +13,7 @@ namespace BelicosaApi.Models
         [JsonIgnore]
         public BelicosaGame Game { get; set; } = null!;
         public string UserId { get; set; }
+
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public IdentityUser User { get; set; } = null!;
         public Color ArmyColor { get; set; }
