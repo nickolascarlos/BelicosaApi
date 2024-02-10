@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BelicosaApi.BusinessLogic;
 using BelicosaApi.DTOs.Player;
+using BelicosaApi.DTOs.TerritoryCard;
 using BelicosaApi.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -13,12 +14,14 @@ namespace BelicosaApi.Controllers
     public class PlayerController : ControllerBase
     {
         private readonly PlayerService _playerService;
+        private readonly TerritoryCardService _territoryCardService;
         private readonly IMapper _mapper;
 
-        public PlayerController(PlayerService playerService, IMapper mapper)
+        public PlayerController(PlayerService playerService, TerritoryCardService territoryCardService, IMapper mapper)
         {
             _playerService = playerService;
             _mapper = mapper;
+            _territoryCardService = territoryCardService;
         }
 
         [HttpGet("{id}")]
@@ -34,6 +37,15 @@ namespace BelicosaApi.Controllers
             var returnablePlayer = _mapper.Map<RetrievePlayerDTO>(player);
 
             return Ok(returnablePlayer);
+        }
+
+        [HttpGet("{playerId}/territoryCards")]
+        public async Task<ActionResult> GetTerritoryCards(int playerId)
+        {
+            List<TerritoryCard> cards = await _territoryCardService.GetFromPlayer(playerId);
+            List<RetrievePlayerTerritoryCardDTO> returnableCards = _mapper.Map<List<RetrievePlayerTerritoryCardDTO>>(cards);
+
+            return Ok(returnableCards);
         }
     }
 }

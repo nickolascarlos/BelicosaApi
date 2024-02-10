@@ -23,6 +23,7 @@ namespace BelicosaApi.AutoMapper
                 .ForMember("Id", x => x.MapFrom(territoryTerritory => territoryTerritory.TerritoryTo.Id))
                 .ForMember("Name", x => x.MapFrom(territoryTerritory => territoryTerritory.TerritoryTo.Name));
             CreateMap<TerritoryCard, RetrieveTerritoryCardDTO>();
+            CreateMap<TerritoryCard, RetrievePlayerTerritoryCardDTO>();
             CreateMap<IdentityUser, RetrieveUserDTO>();
             CreateMap<Player, NoGameId_RetrievePlayerDTO>();
 

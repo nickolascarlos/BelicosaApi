@@ -34,5 +34,18 @@ namespace BelicosaApi.BusinessLogic
         {
             return await GetAll(game.Id);
         }
+
+        public async Task<List<TerritoryCard>> GetFromPlayer(int playerId)
+        {
+            return _context.TerritoryCard
+                .Include(card => card.Territory)
+                .Where(card => (card.Holder != null) &&  card.Holder.Id == playerId)
+                .ToList();
+        }
+
+        public async Task<List<TerritoryCard>> GetFromPlayer(Player player)
+        {
+            return await GetFromPlayer(player.Id);
+        }
     }
 }
