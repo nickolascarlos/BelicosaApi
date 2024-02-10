@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using BelicosaApi.BusinessLogic;
 using BelicosaApi.DTOs.Game;
+using BelicosaApi.Exceptions;
 using BelicosaApi.Migrations;
 using BelicosaApi.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -11,18 +13,22 @@ using System.Security.Claims;
 
 namespace BelicosaApi.ModelsServices
 {
-    public class BelicosaGameService
+    public class BelicosaGameService : ContextServiceBase<BelicosaApiContext>
     {
-        private readonly BelicosaApiContext _context;
         private readonly IAuthorizationService _authService;
+        private readonly ContinentService _continentService;
+        private readonly TerritoryService _territoryService;
 
         public BelicosaGameService(
             BelicosaApiContext context,
-            IAuthorizationService authService
-            )
+            IAuthorizationService authService,
+            ContinentService continentService,
+            TerritoryService territoryService
+            ) : base(context)
         {
-            _context = context;
             _authService = authService;
+            _continentService = continentService;
+            _territoryService = territoryService;
         }
 
         public async Task<BelicosaGame?> Get(int id)
@@ -61,6 +67,11 @@ namespace BelicosaApi.ModelsServices
                 throw new ArgumentNullException();
             }
 
+            if (game.ReachedMaximumNumberOfPlayers())
+            {
+                throw new MaximumNumberOfPlayersReachedException();
+            }
+
             Color randomAvailableColor = game.GetRandomAvailableColor();
 
             Player newPlayer = new Player
@@ -81,6 +92,34 @@ namespace BelicosaApi.ModelsServices
             game.Status = GameStatus.Started;
             game.StartTime = DateTime.Now.ToUniversalTime();
             _context.Games.Update(game);
+            await _context.SaveChangesAsync();
+
+            await Initialize(game);
+        }
+
+        // TODO: Decouple this
+        private async Task Initialize(BelicosaGame game)
+        {
+            Continent africa = await _continentService.Create("África", game);
+            Continent europe = await _continentService.Create("Europa", game);
+
+            Territory argelia = await _territoryService.Create("Argélia", africa, game);
+            Territory nigeria = await _territoryService.Create("Nigéria", africa, game);
+            Territory france = await _territoryService.Create("França", europe, game);
+            Territory germany = await _territoryService.Create("Alemanha", europe, game);
+            Territory england = await _territoryService.Create("Inglaterra", europe, game);
+
+            argelia.AddBorder(nigeria);
+            germany.AddBorder(france);
+            nigeria.AddBorder(argelia);
+            nigeria.AddBorder(france);
+            france.AddBorder(nigeria);
+            france.AddBorder(england);
+            france.AddBorder(germany);
+            england.AddBorder(france);
+
+            _context.UpdateRange([argelia, nigeria, france, germany, england]);
+
             await _context.SaveChangesAsync();
         }
     }

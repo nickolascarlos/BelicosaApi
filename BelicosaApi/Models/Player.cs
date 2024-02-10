@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace BelicosaApi.Models
 {
-    public class Player
+    public partial class Player
     {
         public int Id { get; set; }
         public int GameId { get; set; }
@@ -17,6 +17,7 @@ namespace BelicosaApi.Models
         public IdentityUser User { get; set; } = null!;
         public Color ArmyColor { get; set; }
         public int AvailableFreeDistributionTroops { get; set; } = 0;
+        public List<ContinentalTroopsAvailability> AvailableContinentalDistributionTroops { get; set;  } = new();
     }
 
     [JsonConverter(typeof(JsonStringEnumConverter))]

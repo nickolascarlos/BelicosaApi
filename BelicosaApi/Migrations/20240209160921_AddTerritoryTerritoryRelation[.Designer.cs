@@ -3,6 +3,7 @@ using System;
 using BelicosaApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BelicosaApi.Migrations
 {
     [DbContext(typeof(BelicosaApiContext))]
-    partial class BelicosaApiContextModelSnapshot : ModelSnapshot
+    [Migration("20240209160921_AddTerritoryTerritoryRelation[")]
+    partial class AddTerritoryTerritoryRelation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -219,10 +222,7 @@ namespace BelicosaApi.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("TerritoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("TerritoryId1")
+                    b.Property<int>("TerritoryFromId")
                         .HasColumnType("integer");
 
                     b.Property<int>("TerritoryToId")
@@ -230,9 +230,7 @@ namespace BelicosaApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TerritoryId");
-
-                    b.HasIndex("TerritoryId1");
+                    b.HasIndex("TerritoryFromId");
 
                     b.HasIndex("TerritoryToId");
 
@@ -543,23 +541,19 @@ namespace BelicosaApi.Migrations
 
             modelBuilder.Entity("BelicosaApi.Models.TerritoryTerritory", b =>
                 {
-                    b.HasOne("BelicosaApi.Models.Territory", "TerritoryTo")
-                        .WithMany("MayBeAttackedBy")
-                        .HasForeignKey("TerritoryId")
+                    b.HasOne("BelicosaApi.Models.Territory", "TerritoryFrom")
+                        .WithMany("TerritoryRelations")
+                        .HasForeignKey("TerritoryFromId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BelicosaApi.Models.Territory", null)
-                        .WithMany("TerritoryRelations")
-                        .HasForeignKey("TerritoryId1");
-
-                    b.HasOne("BelicosaApi.Models.Territory", "Territory")
-                        .WithMany("CanAttack")
+                    b.HasOne("BelicosaApi.Models.Territory", "TerritoryTo")
+                        .WithMany()
                         .HasForeignKey("TerritoryToId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Territory");
+                    b.Navigation("TerritoryFrom");
 
                     b.Navigation("TerritoryTo");
                 });
@@ -638,10 +632,6 @@ namespace BelicosaApi.Migrations
 
             modelBuilder.Entity("BelicosaApi.Models.Territory", b =>
                 {
-                    b.Navigation("CanAttack");
-
-                    b.Navigation("MayBeAttackedBy");
-
                     b.Navigation("TerritoryRelations");
                 });
 #pragma warning restore 612, 618

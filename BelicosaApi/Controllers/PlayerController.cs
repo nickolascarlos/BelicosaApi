@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using BelicosaApi.BusinessLogic;
 using BelicosaApi.DTOs.Player;
 using BelicosaApi.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -11,26 +12,28 @@ namespace BelicosaApi.Controllers
     [ApiController]
     public class PlayerController : ControllerBase
     {
-        private BelicosaApiContext BelicosaContext {  get; set; }
-        private IMapper Mapper { get; set; }
+        private readonly PlayerService _playerService;
+        private readonly IMapper _mapper;
 
-        public PlayerController(BelicosaApiContext context, IMapper mapper)
+        public PlayerController(PlayerService playerService, IMapper mapper)
         {
-            BelicosaContext = context;
-            Mapper = mapper;
+            _playerService = playerService;
+            _mapper = mapper;
         }
 
         [HttpGet("{id}")]
-        public ActionResult GetPlayer(int id)
+        public async Task<ActionResult> GetPlayer(int id)
         {
-            Player? player = BelicosaContext.Players.Include(p => p.User).SingleOrDefault(p => p.Id == id);
+            Player? player = await _playerService.Get(id);
 
             if (player is null)
             {
-                return NotFound();
+                return Problem("Player not found", statusCode: StatusCodes.Status404NotFound);
             }
 
-            return Ok(Mapper.Map<GetPlayerDTO>(player));
+            var returnablePlayer = _mapper.Map<RetrievePlayerDTO>(player);
+
+            return Ok(returnablePlayer);
         }
     }
 }

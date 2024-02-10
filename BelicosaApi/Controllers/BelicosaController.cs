@@ -1,7 +1,11 @@
 ﻿using AutoMapper;
+using BelicosaApi.BusinessLogic;
 using BelicosaApi.DTOs;
 using BelicosaApi.DTOs.Game;
 using BelicosaApi.DTOs.Player;
+using BelicosaApi.DTOs.Territory;
+using BelicosaApi.Enums;
+using BelicosaApi.Exceptions;
 using BelicosaApi.Models;
 using BelicosaApi.ModelsServices;
 using Microsoft.AspNet.Identity;
@@ -27,13 +31,16 @@ namespace BelicosaApi.Controllers
         private readonly IAuthorizationService _authorizationService;
         private readonly Microsoft.AspNetCore.Identity.UserManager<IdentityUser> _userManager;
         private readonly BelicosaGameService _gameService;
+        private readonly TerritoryService _territoryService;
 
         public BelicosaController(
             BelicosaApiContext context,
             IMapper mapper,
             IAuthorizationService authorizationService,
             Microsoft.AspNetCore.Identity.UserManager<IdentityUser> userManager,
-            BelicosaGameService belicosaGameService
+            BelicosaGameService belicosaGameService,
+            TerritoryService territoryService
+
            )
         {
             //_belicosaContext = context;
@@ -41,6 +48,7 @@ namespace BelicosaApi.Controllers
             _authorizationService = authorizationService;
             _userManager = userManager;
             _gameService = belicosaGameService;
+            _territoryService = territoryService;
         }
 
         [HttpPost]
@@ -86,7 +94,7 @@ namespace BelicosaApi.Controllers
                 return NotFound();
             }
 
-            var result = await _authorizationService.AuthorizeAsync(User, belicosaGame, "UserIsGameOwner");
+            var result = await _authorizationService.AuthorizeAsync(User, belicosaGame, CustomPolicies.UserIsGameOwner);
 
             if (!result.Succeeded)
             {
@@ -102,8 +110,8 @@ namespace BelicosaApi.Controllers
         public async Task<ActionResult> AddPlayerToBelicosaGame(int gameId, string userId)
         {
             BelicosaGame? game = await _gameService.Get(gameId);
-            
-            if (game is null) 
+
+            if (game is null)
             {
                 return Problem("Game not found", statusCode: StatusCodes.Status404NotFound);
             }
@@ -115,18 +123,36 @@ namespace BelicosaApi.Controllers
                 return Problem("User not found", statusCode: StatusCodes.Status404NotFound);
             }
 
-            // TODO: Should it be here?
-            if (game.AvailableColors.Count == 0)
+            try
             {
-                return Problem("Maximum player capacity reached", statusCode: StatusCodes.Status403Forbidden);
+                Player addedPlayer = await _gameService.AddPlayer(game, user);
+
+                var returnableAddedPlayer = _mapper.Map<RetrievePlayerDTO>(addedPlayer);
+
+                return Created($"api/player/{addedPlayer.Id}", returnableAddedPlayer);
+            } 
+            catch (MaximumNumberOfPlayersReachedException)
+            {
+                return Problem("Game is full", statusCode: StatusCodes.Status403Forbidden);
+            }
+           
+        }
+
+        [HttpGet("{gameId}/territories")]
+        public async Task<ActionResult> GetTerritories(int gameId)
+        {
+            BelicosaGame? game = await _gameService.Get(gameId);
+
+            if (game is null)
+            {
+                return Problem("Game not found", statusCode: StatusCodes.Status404NotFound);
             }
 
-            Player addedPlayer = await _gameService.AddPlayer(game, user);
+            List<Territory> territories = await _territoryService.GetAll(game);
 
-            var returnableAddedPlayer = _mapper.Map<GetPlayerDTO>(addedPlayer); 
+            List<RetrieveTerritoryDTO> returnableTerritories = territories.Select(territory => _mapper.Map<RetrieveTerritoryDTO>(territory)).ToList();
 
-            // TODO: Replace hard-coded route
-            return Created($"api/player/{addedPlayer.Id}", returnableAddedPlayer);
+            return Ok(returnableTerritories);
         }
     }
 }

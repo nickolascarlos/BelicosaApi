@@ -3,6 +3,7 @@ using System;
 using BelicosaApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BelicosaApi.Migrations
 {
     [DbContext(typeof(BelicosaApiContext))]
-    partial class BelicosaApiContextModelSnapshot : ModelSnapshot
+    [Migration("20240208223621_FixTerritory")]
+    partial class FixTerritory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -166,6 +169,9 @@ namespace BelicosaApi.Migrations
                     b.Property<int?>("OccupyingPlayerId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("TerritoryId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("TroopCount")
                         .HasColumnType("integer");
 
@@ -176,6 +182,8 @@ namespace BelicosaApi.Migrations
                     b.HasIndex("GameId");
 
                     b.HasIndex("OccupyingPlayerId");
+
+                    b.HasIndex("TerritoryId");
 
                     b.ToTable("Territories");
                 });
@@ -209,34 +217,6 @@ namespace BelicosaApi.Migrations
                     b.HasIndex("TerritoryId");
 
                     b.ToTable("TerritoryCard");
-                });
-
-            modelBuilder.Entity("BelicosaApi.Models.TerritoryTerritory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("TerritoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("TerritoryId1")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TerritoryToId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TerritoryId");
-
-                    b.HasIndex("TerritoryId1");
-
-                    b.HasIndex("TerritoryToId");
-
-                    b.ToTable("TerritoryTerritory");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -511,6 +491,10 @@ namespace BelicosaApi.Migrations
                         .WithMany()
                         .HasForeignKey("OccupyingPlayerId");
 
+                    b.HasOne("BelicosaApi.Models.Territory", null)
+                        .WithMany("BorderTerritories")
+                        .HasForeignKey("TerritoryId");
+
                     b.Navigation("Game");
 
                     b.Navigation("OccupyingPlayer");
@@ -539,29 +523,6 @@ namespace BelicosaApi.Migrations
                     b.Navigation("Holder");
 
                     b.Navigation("Territory");
-                });
-
-            modelBuilder.Entity("BelicosaApi.Models.TerritoryTerritory", b =>
-                {
-                    b.HasOne("BelicosaApi.Models.Territory", "TerritoryTo")
-                        .WithMany("MayBeAttackedBy")
-                        .HasForeignKey("TerritoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BelicosaApi.Models.Territory", null)
-                        .WithMany("TerritoryRelations")
-                        .HasForeignKey("TerritoryId1");
-
-                    b.HasOne("BelicosaApi.Models.Territory", "Territory")
-                        .WithMany("CanAttack")
-                        .HasForeignKey("TerritoryToId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Territory");
-
-                    b.Navigation("TerritoryTo");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -638,11 +599,7 @@ namespace BelicosaApi.Migrations
 
             modelBuilder.Entity("BelicosaApi.Models.Territory", b =>
                 {
-                    b.Navigation("CanAttack");
-
-                    b.Navigation("MayBeAttackedBy");
-
-                    b.Navigation("TerritoryRelations");
+                    b.Navigation("BorderTerritories");
                 });
 #pragma warning restore 612, 618
         }

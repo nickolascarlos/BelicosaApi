@@ -3,6 +3,7 @@ using System;
 using BelicosaApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BelicosaApi.Migrations
 {
     [DbContext(typeof(BelicosaApiContext))]
-    partial class BelicosaApiContextModelSnapshot : ModelSnapshot
+    [Migration("20240210025927_HotFix")]
+    partial class HotFix
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -213,11 +216,8 @@ namespace BelicosaApi.Migrations
 
             modelBuilder.Entity("BelicosaApi.Models.TerritoryTerritory", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("TerritoryToId")
                         .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("TerritoryId")
                         .HasColumnType("integer");
@@ -225,16 +225,11 @@ namespace BelicosaApi.Migrations
                     b.Property<int?>("TerritoryId1")
                         .HasColumnType("integer");
 
-                    b.Property<int>("TerritoryToId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
+                    b.HasKey("TerritoryToId", "TerritoryId");
 
                     b.HasIndex("TerritoryId");
 
                     b.HasIndex("TerritoryId1");
-
-                    b.HasIndex("TerritoryToId");
 
                     b.ToTable("TerritoryTerritory");
                 });
