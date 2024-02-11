@@ -3,6 +3,7 @@ using System;
 using BelicosaApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BelicosaApi.Migrations
 {
     [DbContext(typeof(BelicosaApiContext))]
-    partial class BelicosaApiContextModelSnapshot : ModelSnapshot
+    [Migration("20240211001325_RenameGamesToGame")]
+    partial class RenameGamesToGame
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -508,7 +511,7 @@ namespace BelicosaApi.Migrations
                         .IsRequired();
 
                     b.HasOne("BelicosaApi.Models.Player", "OccupyingPlayer")
-                        .WithMany("Territories")
+                        .WithMany()
                         .HasForeignKey("OccupyingPlayerId");
 
                     b.Navigation("Game");
@@ -634,8 +637,6 @@ namespace BelicosaApi.Migrations
             modelBuilder.Entity("BelicosaApi.Models.Player", b =>
                 {
                     b.Navigation("AvailableContinentalDistributionTroops");
-
-                    b.Navigation("Territories");
                 });
 
             modelBuilder.Entity("BelicosaApi.Models.Territory", b =>

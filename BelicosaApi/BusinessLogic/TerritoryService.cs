@@ -35,7 +35,8 @@ namespace BelicosaApi.BusinessLogic
             return await _context.Territory
                 .Include(t => t.CanAttack)
                 .Include(t => t.MayBeAttackedBy)
-                .Where(t => t.Game.Id == game.Id).ToListAsync();
+                .Where(t => t.GameId == game.Id)
+                .ToListAsync();
         }
 
         public async Task<Territory> Create(string name, Continent continent, BelicosaGame game)
@@ -52,6 +53,20 @@ namespace BelicosaApi.BusinessLogic
             await _context.SaveChangesAsync();
 
             return territory;
+        }
+
+        public async Task<List<Territory>> GetFromPlayer(int playerId)
+        {
+            return await _context.Territory
+                .Include(territory => territory.CanAttack)
+                    .ThenInclude(territoryTerritory => territoryTerritory.TerritoryTo)
+                .Where(territory => (territory.OccupyingPlayer != null) && territory.OccupyingPlayer!.Id == playerId)
+                .ToListAsync();
+        }
+
+        public async Task<List<Territory>> GetFromPlayer(Player player)
+        {
+            return await GetFromPlayer(player.Id);
         }
 
     }

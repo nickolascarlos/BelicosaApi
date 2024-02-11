@@ -18,6 +18,7 @@ namespace BelicosaApi.Models
         public IdentityUser User { get; set; } = null!;
         public Color ArmyColor { get; set; }
         public int AvailableFreeDistributionTroops { get; set; } = 0;
+        public List<Territory> Territories { get; set; }
         public List<ContinentalTroopsAvailability> AvailableContinentalDistributionTroops { get; set;  } = new();
     }
 

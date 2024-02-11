@@ -154,6 +154,8 @@ namespace BelicosaApi.Controllers
 
             List<Territory> territories = await _territoryService.GetAll(game);
 
+            // TODO
+
             List<RetrieveTerritoryDTO> returnableTerritories = territories.Select(territory => _mapper.Map<RetrieveTerritoryDTO>(territory)).ToList();
 
             return Ok(returnableTerritories);

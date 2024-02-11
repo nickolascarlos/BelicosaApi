@@ -120,33 +120,23 @@ namespace BelicosaApi.ModelsServices
             france.AddBorder(germany);
             england.AddBorder(france);
 
-
             _context.UpdateRange([argelia, nigeria, france, germany, england]);
 
             await _context.SaveChangesAsync();
 
-            await DistributeTerritoryCards(game, territories);
+            await DistributeTerritories(game, territories);
         }
 
-        private async Task DistributeTerritoryCards(BelicosaGame game, List<Territory> territories)
+        private async Task DistributeTerritories(BelicosaGame game, List<Territory> territories)
         {
-            List<Shape> shapes = typeof(Shape).GetEnumValues().Cast<Shape>().ToList();
             List<Player> players = game.Players;
 
             foreach (Territory territory in territories)
             {
-                TerritoryCard territoryCard = new TerritoryCard
-                {
-                    Game = game,
-                    Territory = territory,
-                    Shape = shapes[new Random().Next(0, shapes.Count())],
-                    Holder = players[new Random().Next(0, players.Count())]
-                };
-
-                _context.Add(territoryCard);
+                territory.OccupyingPlayer = players[new Random().Next(0, players.Count())];
+                _context.Update(territory);
+                await _context.SaveChangesAsync();
             }
-
-            await _context.SaveChangesAsync();
         }
     }
 }

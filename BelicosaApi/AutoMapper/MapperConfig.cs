@@ -26,8 +26,8 @@ namespace BelicosaApi.AutoMapper
             CreateMap<TerritoryCard, RetrievePlayerTerritoryCardDTO>();
             CreateMap<IdentityUser, RetrieveUserDTO>();
             CreateMap<Player, NoGameId_RetrievePlayerDTO>();
-
-
+            CreateMap<Territory, RetrievePlayerTerritoryDTO>()
+                .ForMember("BordersWith", x => x.MapFrom(territory => territory.CanAttack));
         }
 
     }

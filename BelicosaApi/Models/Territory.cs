@@ -5,6 +5,7 @@ namespace BelicosaApi.Models
     public partial class Territory
     {
         public int Id { get; set; }
+        public int GameId { get; set; }
         public BelicosaGame Game { get; set; } = null!;
         public string Name { get; set; } = null!;
         public Player? OccupyingPlayer { get; set; }
