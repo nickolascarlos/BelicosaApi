@@ -3,8 +3,10 @@ using BelicosaApi.BusinessLogic;
 using BelicosaApi.DTOs.Player;
 using BelicosaApi.DTOs.Territory;
 using BelicosaApi.DTOs.TerritoryCard;
+using BelicosaApi.Enums;
 using BelicosaApi.Models;
 using BelicosaApi.ModelsServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +21,7 @@ namespace BelicosaApi.Controllers
         private readonly TerritoryCardService _territoryCardService;
         private readonly TerritoryService _territoryService;
         private readonly BelicosaGameService _gameService;
+        private readonly IAuthorizationService _authorizationService;
         private readonly IMapper _mapper;
 
         public PlayerController(
@@ -26,13 +29,16 @@ namespace BelicosaApi.Controllers
             TerritoryCardService territoryCardService,
             TerritoryService territoryService,
             BelicosaGameService gameService,
-            IMapper mapper)
+            IAuthorizationService authorizationService,
+            IMapper mapper
+           )
         {
             _mapper = mapper;
             _playerService = playerService;
             _territoryCardService = territoryCardService;
             _territoryService = territoryService;
             _gameService = gameService;
+            _authorizationService = authorizationService;
         }
 
         [HttpGet("{id}")]
@@ -50,9 +56,24 @@ namespace BelicosaApi.Controllers
             return Ok(returnablePlayer);
         }
 
+        [Authorize]
         [HttpGet("{playerId}/territoryCards")]
         public async Task<ActionResult> GetTerritoryCards(int playerId)
         {
+            Player? player = await _playerService.Get(playerId);
+            
+            if (player is null)
+            {
+                return Problem("Player not found", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            AuthorizationResult authorization = await _authorizationService.AuthorizeAsync(User, player, CustomPolicies.UserIsPlayer);
+
+            if (!authorization.Succeeded)
+            {
+                return Problem(String.Join("\n", authorization.Failure.FailureReasons.Select(reason => reason.Message)), statusCode: StatusCodes.Status403Forbidden);
+            }
+
             List<TerritoryCard> cards = await _territoryCardService.GetFromPlayer(playerId);
             List<RetrievePlayerTerritoryCardDTO> returnableCards = _mapper.Map<List<RetrievePlayerTerritoryCardDTO>>(cards);
 

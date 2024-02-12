@@ -30,6 +30,11 @@ builder.Services.AddAuthorization(options =>
     {
         policy.Requirements.Add(new UserIsGameOwnerRequirement());
     });
+
+    options.AddPolicy(CustomPolicies.UserIsPlayer, policy =>
+    {
+        policy.Requirements.Add(new UserIsPlayerRequirement());
+    });
 });
 
 builder.Services.AddScoped<BelicosaGameService>();
@@ -38,8 +43,8 @@ builder.Services.AddScoped<TerritoryService>();
 builder.Services.AddScoped<ContinentService>();
 //builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<TerritoryCardService>();
-
 builder.Services.AddSingleton<IAuthorizationHandler, UserIsGameOwnerAuthorizationHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, UserIsPlayerAuthorizationHandler>();
 builder.Services.AddIdentityApiEndpoints<IdentityUser>()
                 .AddEntityFrameworkStores<BelicosaApiContext>();
 
