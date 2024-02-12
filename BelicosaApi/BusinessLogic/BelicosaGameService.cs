@@ -125,6 +125,8 @@ namespace BelicosaApi.ModelsServices
             await _context.SaveChangesAsync();
 
             await DistributeTerritories(game, territories);
+
+            await GivePlayerFreeTroops(game.Players[0]);
         }
 
         private async Task DistributeTerritories(BelicosaGame game, List<Territory> territories)
@@ -134,9 +136,22 @@ namespace BelicosaApi.ModelsServices
             foreach (Territory territory in territories)
             {
                 territory.OccupyingPlayer = players[new Random().Next(0, players.Count())];
+                territory.TroopCount += 1;
                 _context.Update(territory);
                 await _context.SaveChangesAsync();
             }
+        }
+
+        private async Task GivePlayerFreeTroops(Player player)
+        {
+            List<Territory> playerTerritories = await _territoryService.GetFromPlayer(player);
+
+            int givenTroopsCount = playerTerritories.Count();
+
+            player.AvailableFreeDistributionTroops += givenTroopsCount;
+
+            _context.Update(player);
+            await _context.SaveChangesAsync();
         }
     }
 }

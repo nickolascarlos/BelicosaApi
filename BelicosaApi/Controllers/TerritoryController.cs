@@ -1,6 +1,10 @@
 ﻿using BelicosaApi.BusinessLogic;
+using BelicosaApi.Exceptions;
 using BelicosaApi.Models;
+using Microsoft.AspNet.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BelicosaApi.Controllers
@@ -10,11 +14,18 @@ namespace BelicosaApi.Controllers
     public class TerritoryController : ControllerBase
     {
         private readonly TerritoryService _territoryService;
+        private readonly PlayerService _playerService;
+        private readonly Microsoft.AspNetCore.Identity.UserManager<IdentityUser> _userManager;
 
-
-        public TerritoryController(TerritoryService territoryService)
+        public TerritoryController(
+            TerritoryService territoryService,
+            PlayerService playerService,
+            Microsoft.AspNetCore.Identity.UserManager<IdentityUser> userManager
+            )
         {
             _territoryService = territoryService;
+            _playerService = playerService;
+            _userManager = userManager;
         }
 
         [HttpGet("{id}")]
@@ -28,6 +39,54 @@ namespace BelicosaApi.Controllers
             }
 
             return Ok(territory);
+        }
+
+        [Authorize]
+        [HttpPost("{territoryId}/placeFreeTroops/{troopsCount}")]
+        public async Task<ActionResult> PlaceFreeTroops(int territoryId, int troopsCount)
+        {
+            IdentityUser? currentUser = await _userManager.GetUserAsync(User);
+
+            if (currentUser is null)
+            {
+                return Problem("Invalid user", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            Territory? territory = await _territoryService.Get(territoryId);
+
+            if (territory is null)
+            {
+                return Problem("Territory not found", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            BelicosaGame? game = await _territoryService.GetGameFromTerritory(territoryId);
+            
+            if (game is null)
+            {
+                return Problem(statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            Player? player = await _playerService.GetUserAsPlayer(game!, currentUser);
+
+            if (player is null)
+            {
+                return Problem(statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            try
+            {
+                await _territoryService.PlaceFreeTroops(territory, troopsCount, player);
+            }
+            catch (NotEnoughTroopsException)
+            {
+                return Problem("Not enough troops", statusCode: StatusCodes.Status403Forbidden);
+            }
+            catch (TerritoryNotOccupiedByPlayerException)
+            {
+                return Problem("Territory does not belong to player", statusCode: StatusCodes.Status403Forbidden);
+            }
+
+            return Ok();
         }
 
         //[HttpPost("{fromId}/moveTroopsTo/{toId}")]

@@ -6,8 +6,10 @@ using BelicosaApi.DTOs.TerritoryCard;
 using BelicosaApi.Enums;
 using BelicosaApi.Models;
 using BelicosaApi.ModelsServices;
+using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +24,7 @@ namespace BelicosaApi.Controllers
         private readonly TerritoryService _territoryService;
         private readonly BelicosaGameService _gameService;
         private readonly IAuthorizationService _authorizationService;
+        private readonly Microsoft.AspNetCore.Identity.UserManager<IdentityUser> _userManager;
         private readonly IMapper _mapper;
 
         public PlayerController(
@@ -29,6 +32,7 @@ namespace BelicosaApi.Controllers
             TerritoryCardService territoryCardService,
             TerritoryService territoryService,
             BelicosaGameService gameService,
+            Microsoft.AspNetCore.Identity.UserManager<IdentityUser> userManager,
             IAuthorizationService authorizationService,
             IMapper mapper
            )
@@ -38,6 +42,7 @@ namespace BelicosaApi.Controllers
             _territoryCardService = territoryCardService;
             _territoryService = territoryService;
             _gameService = gameService;
+            _userManager = userManager;
             _authorizationService = authorizationService;
         }
 
@@ -102,6 +107,33 @@ namespace BelicosaApi.Controllers
             List<RetrievePlayerTerritoryDTO> returnableTerritories = _mapper.Map<List<RetrievePlayerTerritoryDTO>>(territories);
 
             return Ok(returnableTerritories);
+        }
+
+        [HttpGet("me/{gameId}")]
+        public async Task<ActionResult> GetMyself(int gameId)
+        {
+            BelicosaGame? game = await _gameService.Get(gameId);
+
+            if (game is null)
+            {
+                return Problem("Game not found", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            IdentityUser? currentUser = await _userManager.GetUserAsync(User);
+
+            if (currentUser is null)
+            {
+                return Problem("Invalid user", statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            Player? player = await _playerService.GetUserAsPlayer(game, currentUser);
+
+            if (player is null)
+            {
+                return Problem("User not found as player of this game", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            return Ok(_mapper.Map<RetrievePlayerDTO>(player));
         }
     }
 }

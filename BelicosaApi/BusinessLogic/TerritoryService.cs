@@ -1,4 +1,5 @@
-﻿using BelicosaApi.Models;
+﻿using BelicosaApi.Exceptions;
+using BelicosaApi.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace BelicosaApi.BusinessLogic
@@ -17,22 +18,17 @@ namespace BelicosaApi.BusinessLogic
             Territory? territory = await _context.Territory
                 .Include(t => t.CanAttack)
                 .Include(t => t.MayBeAttackedBy)
+                .Include(t => t.OccupyingPlayer)
                 .SingleOrDefaultAsync(territory => territory.Id == territoryId);
             
-            if (territory is not null)
-            {
-                foreach (var jk in territory.CanAttack)
-                {
-                    Console.WriteLine(jk.ToString());
-                }
-            }
-
             return territory;
         }
 
         public async Task<List<Territory>> GetAll(BelicosaGame game)
         {
             return await _context.Territory
+                .Include (t => t.OccupyingPlayer)
+                    .ThenInclude(t => t!.User)
                 .Include(t => t.CanAttack)
                 .Include(t => t.MayBeAttackedBy)
                 .Where(t => t.GameId == game.Id)
@@ -67,6 +63,41 @@ namespace BelicosaApi.BusinessLogic
         public async Task<List<Territory>> GetFromPlayer(Player player)
         {
             return await GetFromPlayer(player.Id);
+        }
+
+        public async Task PlaceFreeTroops(Territory territory, int troopsToAdd, Player player)
+        {
+            if (territory.OccupyingPlayerId != player.Id)
+            {
+                throw new TerritoryNotOccupiedByPlayerException();
+            }
+
+            if (player.AvailableFreeDistributionTroops < troopsToAdd)
+            {
+                throw new NotEnoughTroopsException();
+            }
+
+            player.AvailableFreeDistributionTroops -= troopsToAdd;
+            _context.Update(player);
+
+            territory.TroopCount += troopsToAdd;
+            _context.Update(territory);
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<BelicosaGame?> GetGameFromTerritory(int territoryId)
+        {
+            return (await _context.Territory
+                .Include(territory => territory.Game)
+                .Where(territory => territory.Id == territoryId)
+                .SingleOrDefaultAsync())
+                !.Game;
+        }
+
+        public async Task<BelicosaGame?> GetGameFromTerritory(Territory territory)
+        {
+            return await GetGameFromTerritory(territory.Id);
         }
 
     }
