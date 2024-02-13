@@ -66,7 +66,7 @@ namespace BelicosaApi.Controllers
                 return Problem(statusCode: StatusCodes.Status500InternalServerError);
             }
 
-            Player? player = await _playerService.GetUserAsPlayer(game!, currentUser);
+            Player? player = await _playerService.GetUserAsPlayer(game, currentUser);
 
             if (player is null)
             {
@@ -88,12 +88,56 @@ namespace BelicosaApi.Controllers
 
             return Ok();
         }
+        [Authorize]
+        [HttpPost("{fromId}/move/{troopsCount}/TroopsTo/{toId}")]
+        public async Task<ActionResult> MoveTroopsBetweenTerritories(int fromId, int toId, int troopsCount)
+        {
+            IdentityUser? currentUser = await _userManager.GetUserAsync(User);
 
-        //[HttpPost("{fromId}/moveTroopsTo/{toId}")]
-        //public async Task MoveTroopsBetweenTerritories(int fromId, int toId)
-        //{
-        //    Territory? from = _context.Territories.SingleOrDefault(territory => territory.Id == fromId);
+            if (currentUser is null)
+            {
+                return Problem("Invalid user", statusCode: StatusCodes.Status404NotFound);
+            }
 
-        //}
+            Territory? from = await _territoryService.Get(fromId);
+            Territory? to = await _territoryService.Get(toId);
+
+            if (from is null || to is null)
+            {
+                return Problem("At least one territory was not found", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            BelicosaGame? game = await _territoryService.GetGameFromTerritory(from);
+
+            if (game is null)
+            {
+                return Problem(statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            Player? player = await _playerService.GetUserAsPlayer(game, currentUser);
+
+            if (player is null)
+            {
+                return Problem(statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            try
+            {
+                await _territoryService.MoveTroops(from, to, troopsCount, player);
+                return Ok();
+            }
+            catch (NotEnoughTroopsException)
+            {
+                return Problem("Not enough troops", statusCode: StatusCodes.Status403Forbidden);
+            }
+            catch (TerritoryNotOccupiedByPlayerException)
+            {
+                return Problem("Territory is not occupied by player", statusCode: StatusCodes.Status403Forbidden);
+            }
+            catch (NonAdjacentTerritoriesException)
+            {
+                return Problem("Territories don't border", statusCode: StatusCodes.Status403Forbidden);
+            }
+        }
     }
 }

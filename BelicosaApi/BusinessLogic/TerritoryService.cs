@@ -100,5 +100,36 @@ namespace BelicosaApi.BusinessLogic
             return await GetGameFromTerritory(territory.Id);
         }
 
+        public async Task MoveTroops(Territory from, Territory to, int movingTroopCount, Player player)
+        {
+            if (from.OccupyingPlayerId != player.Id || to.OccupyingPlayerId != player.Id)
+            {
+                throw new TerritoryNotOccupiedByPlayerException();
+            }
+
+            // There must always be at least 1 troop in the occupied territory
+            // That's why it is not allowed to move all the troops
+            if (from.TroopCount <= movingTroopCount)
+            {
+                throw new NotEnoughTroopsException();
+            }
+
+            if (!BordersWith(from, to))
+            {
+                throw new NonAdjacentTerritoriesException();
+            }
+
+            from.TroopCount -= movingTroopCount;
+            to.TroopCount += movingTroopCount;
+
+            _context.UpdateRange([from, to]);
+            await _context.SaveChangesAsync();
+        }
+
+        public bool BordersWith(Territory territory1, Territory territory2)
+        {
+            return territory1.CanAttack.Any(t => t.Id == territory2.Id);
+        }
+
     }
 }

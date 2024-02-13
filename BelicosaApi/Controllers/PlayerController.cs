@@ -109,6 +109,7 @@ namespace BelicosaApi.Controllers
             return Ok(returnableTerritories);
         }
 
+        [Authorize]
         [HttpGet("me/{gameId}")]
         public async Task<ActionResult> GetMyself(int gameId)
         {
