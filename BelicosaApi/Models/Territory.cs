@@ -8,7 +8,7 @@ namespace BelicosaApi.Models
         public int GameId { get; set; }
         public BelicosaGame Game { get; set; } = null!;
         public string Name { get; set; } = null!;
-        public int OccupyingPlayerId { get; set; }
+        public int? OccupyingPlayerId { get; set; }
         public Player? OccupyingPlayer { get; set; }
         public List<TerritoryTerritory> TerritoryRelations { get; set; } = new();
         public int TroopCount { get; set; }

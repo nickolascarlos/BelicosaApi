@@ -72,6 +72,11 @@ namespace BelicosaApi.ModelsServices
                 throw new MaximumNumberOfPlayersReachedException();
             }
 
+            if (game.Players.Any(player => player.UserId == user.Id))
+            {
+                throw new UserAlreadyInGameException();
+            }
+
             Color randomAvailableColor = game.GetRandomAvailableColor();
 
             Player newPlayer = new Player
@@ -135,6 +140,16 @@ namespace BelicosaApi.ModelsServices
 
             foreach (Territory territory in territories)
             {
+                // --------------------
+                TerritoryCard card = new TerritoryCard
+                {
+                    Game = game,
+                    Territory = territory,
+                    Holder = players[new Random().Next(0, players.Count())],
+                    Shape = Shape.Triangle
+                };
+                _context.Add(card);
+                // --------------------
                 territory.OccupyingPlayer = players[new Random().Next(0, players.Count())];
                 territory.TroopCount += 1;
                 _context.Update(territory);

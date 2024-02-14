@@ -139,5 +139,6 @@ namespace BelicosaApi.Controllers
                 return Problem("Territories don't border", statusCode: StatusCodes.Status403Forbidden);
             }
         }
+    
     }
 }

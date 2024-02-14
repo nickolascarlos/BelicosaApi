@@ -139,7 +139,10 @@ namespace BelicosaApi.Controllers
             {
                 return Problem("Game is full", statusCode: StatusCodes.Status403Forbidden);
             }
-           
+            catch (UserAlreadyInGameException)
+            {
+                return Problem("User already joined this game", statusCode: StatusCodes.Status403Forbidden);
+            }
         }
 
         [HttpGet("{gameId}/territories")]

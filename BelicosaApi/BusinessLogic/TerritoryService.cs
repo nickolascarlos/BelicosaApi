@@ -41,7 +41,8 @@ namespace BelicosaApi.BusinessLogic
             {
                 Name = name,
                 TroopCount = 0,
-                Game = game
+                Game = game,
+                OccupyingPlayer = null
             };
 
             continent.Territories.Add(territory);
