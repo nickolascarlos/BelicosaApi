@@ -1,6 +1,8 @@
 ﻿using BelicosaApi.BusinessLogic;
+using BelicosaApi.DTOs;
 using BelicosaApi.Exceptions;
 using BelicosaApi.Models;
+using BelicosaApi.ModelsServices;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,16 +17,19 @@ namespace BelicosaApi.Controllers
     {
         private readonly TerritoryService _territoryService;
         private readonly PlayerService _playerService;
+        private readonly BelicosaGameService _gameService;
         private readonly Microsoft.AspNetCore.Identity.UserManager<IdentityUser> _userManager;
 
         public TerritoryController(
             TerritoryService territoryService,
             PlayerService playerService,
+            BelicosaGameService gameService,
             Microsoft.AspNetCore.Identity.UserManager<IdentityUser> userManager
             )
         {
             _territoryService = territoryService;
             _playerService = playerService;
+            _gameService = gameService;
             _userManager = userManager;
         }
 
@@ -88,6 +93,7 @@ namespace BelicosaApi.Controllers
 
             return Ok();
         }
+        
         [Authorize]
         [HttpPost("{fromId}/move/{troopsCount}/TroopsTo/{toId}")]
         public async Task<ActionResult> MoveTroopsBetweenTerritories(int fromId, int toId, int troopsCount)
@@ -139,6 +145,52 @@ namespace BelicosaApi.Controllers
                 return Problem("Territories don't border", statusCode: StatusCodes.Status403Forbidden);
             }
         }
-    
+
+        [Authorize]
+        [HttpPost("{attackerId}/attack/{attackedId}")]
+        public async Task<ActionResult> Attack(int attackerId, int attackedId)
+        {
+            IdentityUser? currentUser = await _userManager.GetUserAsync(User);
+
+            if (currentUser is null)
+            {
+                return Problem("Invalid user", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            Territory? attacker = await _territoryService.Get(attackerId);
+            Territory? attacked = await _territoryService.Get(attackedId);
+
+            if (attacker is null || attacked is null)
+            {
+                // TODO: Improve this message
+                return Problem("Territories not found", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            BelicosaGame? game = await _territoryService.GetGameFromTerritory(attacker);
+
+            if (game is null)
+            {
+                return Problem("Territory game not found", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            Player? player = await _playerService.GetUserAsPlayer(game, currentUser);
+
+            if (player is null)
+            {
+                return Problem("Player not found", statusCode: StatusCodes.Status404NotFound);
+            }
+            
+            var battleResult = await _gameService.Attack(attacker, attacked, player);
+            
+            // TODO: Create a mapping for this
+            BattleResultDTO returnableBattleResult = new()
+            {
+                DefenderTroopsLoss = battleResult.Item1,
+                AttackerTroopsLoss = battleResult.Item2,
+                Conquered = battleResult.Item3
+            };
+
+            return Ok(returnableBattleResult);
+        }
     }
 }

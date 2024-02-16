@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using System.IO.Compression;
 using System.Security.Claims;
 
 namespace BelicosaApi.ModelsServices
@@ -167,6 +168,78 @@ namespace BelicosaApi.ModelsServices
 
             _context.Update(player);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<Tuple<int, int, bool>> Attack(Territory attacker, Territory attacked, Player player)
+        {
+            if (attacker.OccupyingPlayerId != player.Id)
+            {
+                throw new TerritoryNotOccupiedByPlayerException();
+            }
+
+            if (attacked.OccupyingPlayerId == player.Id)
+            {
+                throw new AttackingOwnTerritoryException();
+            }
+
+            if (attacker.TroopCount == 1)
+            {
+                throw new NotEnoughTroopsException();
+            }
+
+            int attackerTroopCount = int.Min(3, attacker.TroopCount-1);
+            int defenderTroopCount = int.Min(3, attacked.TroopCount);
+
+            List<int> attackerDice = ThrowDice(attackerTroopCount);
+            List<int> defenderDice = ThrowDice(defenderTroopCount);
+
+            var (attackWins, defendWins) = CalculateBattleResult(attackerDice, defenderDice);
+            attacked.TroopCount -= attackWins;
+            attacker.TroopCount -= defendWins;
+            bool conquered = attacked.TroopCount == 0;
+
+            if (conquered)
+            {
+                attacked.OccupyingPlayer = player;
+                attacked.TroopCount += 1;
+                attacker.TroopCount -= 1;
+            }
+            _context.UpdateRange([attacked, attacker]);
+            await _context.SaveChangesAsync();
+
+            return new Tuple<int, int, bool>(attackWins, defendWins, conquered);
+        }
+
+        private static List<int> ThrowDice(int throws)
+        {
+            return Enumerable.Range(0, throws).Select(_ => new Random().Next(1, 6)).ToList();
+        }
+
+        private static List<int> ThrowSortedDice(int throws)
+        {
+            return ThrowDice(throws).OrderDescending().ToList();
+        }
+
+        private static Tuple<int, int> CalculateBattleResult(List<int> attackerDice, List<int> attackedDice)
+        {
+            attackerDice = attackerDice.OrderDescending().ToList();
+            attackedDice = attackedDice.OrderDescending().ToList();
+            var zippedDice = attackerDice.Zip(attackedDice, (a, b) => new Tuple<int, int>(a, b));
+
+            var (attackerWins, attackedWins) = (0, 0);
+            foreach (var (attackerDie, attackedDie) in zippedDice)
+            {
+                if (attackerDie > attackedDie)
+                {
+                    attackerWins += 1;
+                }
+                else
+                {
+                    attackedWins += 1;
+                }
+            }
+
+            return new Tuple<int, int>(attackerWins, attackedWins);
         }
     }
 }
